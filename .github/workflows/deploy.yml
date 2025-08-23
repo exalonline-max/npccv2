@@ -1,0 +1,41 @@
+name: Deploy to Hetzner VPS
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start SSH agent
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+
+    - name: Deploy to VPS
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          echo "Deploying to ${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}"
+          ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} << 'EOF'
+          set -e
+          cd "${DEPLOY_PATH}"
+          # ensure repo is present and up-to-date
+          if [ -d .git ]; then
+            git fetch --all
+            git reset --hard origin/main
+          else
+            git clone https://github.com/${GITHUB_REPOSITORY}.git .
+            git checkout main
+          fi
+          # start or update services
+      docker compose pull || true
+      docker compose up -d --remove-orphans
+          EOF

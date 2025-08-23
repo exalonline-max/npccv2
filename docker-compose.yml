@@ -1,0 +1,44 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_DB: npcchatter
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/npcchatter
+      - FLASK_APP=backend.app:app
+      - FLASK_ENV=production
+      - FRONTEND_ORIGIN=http://lvh.me:5173
+      - COOKIE_DOMAIN=.lvh.me
+    depends_on:
+      - db
+    ports:
+      - "5001:5001"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  pgdata:
+    name: npcchatter_pgdata
+
