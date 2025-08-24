@@ -16,6 +16,16 @@ export const useAuthStore = create((set, get) => ({
   },
   fetchMe: async () => {
     try{
+      // Don't call the protected /me endpoint from the public marketing site
+      // to avoid noisy 401s in the browser console for unauthenticated visitors.
+      if(typeof window !== 'undefined'){
+        const host = window.location.hostname || ''
+        if(host === 'www.npcchatter.com' || host === 'npcchatter.com'){
+          set({ user: null, memberships: [] })
+          return null
+        }
+      }
+
       const res = await api.get('/me')
       set({ user: res.data.user, memberships: res.data.memberships })
       return res.data

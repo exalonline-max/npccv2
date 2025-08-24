@@ -7,6 +7,13 @@ import { useToastStore } from '../state/toastStore'
 export default function AccountPickerPage(){
   const memberships = useAuthStore(s=>s.memberships)
   const user = useAuthStore(s=>s.user)
+  React.useEffect(()=>{
+    // If there is no authenticated user, redirect to the canonical public site (where login sits)
+    if(!user){
+      // Use full redirect so we leave the app and go to the public site
+      window.location.href = 'https://www.npcchatter.com'
+    }
+  }, [user])
   const [code, setCode] = React.useState('')
   const [loading, setLoading] = React.useState(false)
   const fetchMe = useAuthStore(s => s.fetchMe)

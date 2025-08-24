@@ -7,7 +7,7 @@ export default function LoginPage(){
   const [password, setPassword] = useState('')
   const login = useAuthStore(s=>s.login)
   const navigate = useNavigate()
-  const isDev = process.env.NODE_ENV !== 'production'
+  const isDev = process.env.NODE_ENV !== 'production' || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1')
 
   const submit = async (e)=>{
     e.preventDefault()
@@ -29,6 +29,13 @@ export default function LoginPage(){
           <div className="mt-4 flex gap-2">
             <button type="button" className="btn btn-sm" onClick={()=>{ setEmail('dm@npx.test'); setPassword('Password123!') }}>Auto-fill DM</button>
             <button type="button" className="btn btn-sm" onClick={()=>{ setEmail('player@npx.test'); setPassword('Password123!') }}>Auto-fill Player</button>
+          </div>
+        )}
+
+        {isDev && (
+          <div className="mt-3 flex gap-2">
+            <button type="button" className="btn btn-success btn-sm" onClick={async ()=>{ await login('dm@npx.test','Password123!'); navigate('/campaigns') }}>Auto-login DM</button>
+            <button type="button" className="btn btn-accent btn-sm" onClick={async ()=>{ await login('player@npx.test','Password123!'); navigate('/campaigns') }}>Auto-login Player</button>
           </div>
         )}
 
