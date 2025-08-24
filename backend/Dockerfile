@@ -1,17 +1,22 @@
 FROM python:3.11-slim
+
 WORKDIR /app
 
-# install dependencies
-COPY requirements.txt ./
-# ensure gunicorn is available for the CMD
-RUN pip install --no-cache-dir gunicorn && \
-	pip install --no-cache-dir -r requirements.txt
+# Install minimal build deps and cleanup lists
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# copy app into a backend package directory so `import backend.app` works
-COPY . /app/backend
+# Copy dependency manifest and install
+COPY requirements.txt pyproject.toml /app/
+RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PYTHONUNBUFFERED=1
+# Copy source
+COPY . /app
 
-EXPOSE 5001
+# Default PORT; Fly sets this at runtime
+ENV PORT=5001
+EXPOSE ${PORT}
 
-CMD ["gunicorn", "-b", "0.0.0.0:5001", "backend.app:app", "--workers", "2"]
+# Use a shell form so $PORT expands. Bind to backend.app:app
+CMD ["sh", "-c", "exec gunicorn backend.app:app -b 0.0.0.0:${PORT} --workers 2 --log-level info"]

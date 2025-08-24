@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, redirect
 import re
 from .config import Config
 from .extensions import db, migrate, jwt, cors
@@ -29,7 +29,12 @@ def create_app():
     if app.config.get('ENV') == 'development' or app.config.get('DEBUG'):
         cors.init_app(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
     else:
-        origins = [r'^https?://(.+\.)?lvh\.me(:\d+)?$']
+        # Allow production domains: lvh.me and the Vercel deployment host for the frontend.
+        # Add additional production hosts here as needed.
+        origins = [
+            r'^https?://(.+\.)?lvh\.me(:\d+)?$',
+            r'^https?://(.+\.)?npccv2\.vercel\.app(:\d+)?$'
+        ]
         cors.init_app(app, resources={r"/api/*": {"origins": origins}}, supports_credentials=True)
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
@@ -40,6 +45,11 @@ def create_app():
     @app.get('/api/health')
     def health():
         return jsonify({"status": "ok"})
+
+    @app.get('/')
+    def index():
+        # Redirect base URL to the API health endpoint so the root doesn't return a 404
+        return redirect('/api/health')
 
     return app
 
