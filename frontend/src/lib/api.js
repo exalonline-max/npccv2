@@ -1,16 +1,26 @@
 import axios from 'axios'
 
-// Prefer VITE_API_URL (set at build time in Vercel or locally) so the frontend
-// can be pointed at the deployed backend. Fall back to the previous
-// development default (api.lvh.me:5001) to preserve local dev behavior.
+// Resolve base URL for API calls.
+// - If VITE_API_URL is set at build time, use it (useful for pointing at a remote backend).
+// - In production builds with no VITE_API_URL, default to a relative '/api' so requests stay same-origin
+//   (this allows the Vercel proxy route to forward to the Fly backend and avoids CORS).
+// - In development (non-production) with no VITE_API_URL, fall back to api.lvh.me:5001 for local testing.
 const viteApi = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) ? import.meta.env.VITE_API_URL : null
 
 function buildBaseURL() {
+  // In the browser (client-side), always use the relative '/api' path so requests are same-origin
+  // and will be routed through Vercel's proxy. This reliably avoids cross-origin CORS failures.
+  if (typeof window !== 'undefined') {
+    return '/api'
+  }
+
+  // Node-side (SSR/build tooling) or dev-only: prefer explicit VITE_API_URL if provided.
   if (viteApi) {
-    // allow the var to be set with or without a trailing slash or /api suffix
     return viteApi.replace(/\/+$/,'').replace(/\/api$/, '') + '/api'
   }
-  const protocol = (typeof window !== 'undefined' && window.location && window.location.protocol) ? window.location.protocol : 'http:'
+
+  // Default fallback for non-browser dev/test: api.lvh.me local backend
+  const protocol = 'http:'
   return `${protocol}//api.lvh.me:5001/api`
 }
 

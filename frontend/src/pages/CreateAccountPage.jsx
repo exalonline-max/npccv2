@@ -9,6 +9,12 @@ export default function CreateAccountPage(){
   const [display, setDisplay] = useState('')
   const user = useAuthStore(s => s.user)
   const navigate = useNavigate()
+  React.useEffect(()=>{
+    if(!user){
+      // redirect unauthenticated visitors to the public site/login
+      window.location.href = 'https://www.npcchatter.com'
+    }
+  }, [user])
 
   const toast = useToastStore(s => s.push)
   const submit = async (e)=>{
