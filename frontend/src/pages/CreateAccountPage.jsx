@@ -32,6 +32,8 @@ export default function CreateAccountPage(){
         // provide an explicit open button instead of redirecting the current tab
         const open = async () => {
           const host = (typeof window !== 'undefined' && window.location.hostname) || 'lvh.me'
+          // strip leading www. so we build slug.domain.com (not slug.www.domain.com)
+          const canonicalHost = host.startsWith('www.') ? host.slice(4) : host
           const isVercelPreview = host.endsWith('.vercel.app') && host !== 'npccv2.vercel.app'
 
           if (isVercelPreview) {
@@ -54,7 +56,7 @@ export default function CreateAccountPage(){
             return
           }
 
-          const targetHost = host === 'lvh.me' || host.endsWith('.lvh.me') ? `${slug}.lvh.me:5173` : `${slug}.${window.location.host}`
+          const targetHost = host === 'lvh.me' || host.endsWith('.lvh.me') ? `${slug}.lvh.me:5173` : `${slug}.${canonicalHost}`
           // navigate in the same tab
           window.location.href = `https://${targetHost}`
         }

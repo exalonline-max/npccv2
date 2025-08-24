@@ -80,6 +80,8 @@ export default function AccountPickerPage(){
                 className="btn btn-sm"
                 onClick={async () => {
                   const host = (typeof window !== 'undefined' && window.location.hostname) || 'lvh.me'
+                  // strip leading www. so we build slug.domain.com (not slug.www.domain.com)
+                  const canonicalHost = host.startsWith('www.') ? host.slice(4) : host
                   const isVercelPreview = host.endsWith('.vercel.app') && host !== 'npccv2.vercel.app'
 
                   // If we're on a Vercel preview deployment, those hosts don't support wildcard subdomains
@@ -105,7 +107,7 @@ export default function AccountPickerPage(){
                   }
 
                   // normal behavior: use lvh.me for local dev, otherwise subdomain on current host
-                  const targetHost = host === 'lvh.me' || host.endsWith('.lvh.me') ? `${m.account.slug}.lvh.me:5173` : `${m.account.slug}.${window.location.host}`
+                  const targetHost = host === 'lvh.me' || host.endsWith('.lvh.me') ? `${m.account.slug}.lvh.me:5173` : `${m.account.slug}.${canonicalHost}`
                   // navigate in the same tab
                   window.location.href = `https://${targetHost}`
                 }}
