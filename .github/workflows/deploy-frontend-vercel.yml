@@ -27,4 +27,4 @@ jobs:
         run: |
           cd frontend
           # Deploy the built static output (Vercel will detect the dist dir from vercel.json)
-          vercel deploy --prod --token "$VERCEL_TOKEN"
+          vercel deploy --prod --yes --token "$VERCEL_TOKEN"
