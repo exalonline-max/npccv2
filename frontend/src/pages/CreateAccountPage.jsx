@@ -30,7 +30,34 @@ export default function CreateAccountPage(){
       if(res && res.status === 201){
         toast('Campaign created', 'success')
         // provide an explicit open button instead of redirecting the current tab
-        const open = () => window.open(`https://${slug}.lvh.me:5173`, '_blank', 'noopener')
+        const open = async () => {
+          const host = (typeof window !== 'undefined' && window.location.hostname) || 'lvh.me'
+          const isVercelPreview = host.endsWith('.vercel.app') && host !== 'npccv2.vercel.app'
+
+          if (isVercelPreview) {
+            const prodHost = 'npccv2.vercel.app'
+            const prodUrl = `https://${slug}.${prodHost}`
+            const devUrl = `https://${slug}.lvh.me:5173`
+            const openProd = window.confirm(
+              'This is a preview deployment and campaign subdomains are not routable from here.\n\nOpen the campaign on the production site now? (OK = production, Cancel = copy local dev URL to clipboard)'
+            )
+            if (openProd) {
+              window.location.href = prodUrl
+              return
+            }
+            try {
+              await navigator.clipboard.writeText(devUrl)
+              window.alert('Local dev URL copied to clipboard: ' + devUrl)
+            } catch (e) {
+              window.prompt('Copy local dev URL', devUrl)
+            }
+            return
+          }
+
+          const targetHost = host === 'lvh.me' || host.endsWith('.lvh.me') ? `${slug}.lvh.me:5173` : `${slug}.${window.location.host}`
+          // navigate in the same tab
+          window.location.href = `https://${targetHost}`
+        }
         // lightweight confirm CTA
         if(window.confirm('Campaign created. Open in a new tab?')){
           open()

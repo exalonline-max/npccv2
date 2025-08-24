@@ -75,7 +75,41 @@ export default function AccountPickerPage(){
                 </div>
               )}
 
-              <button className="btn btn-sm" onClick={()=> window.open(`https://${m.account.slug}.lvh.me:5173`, '_blank', 'noopener')}>Open</button>
+              {/* Open campaign. Avoid trying to construct preview subdomain hostnames (they don't have wildcard DNS). */}
+              <button
+                className="btn btn-sm"
+                onClick={async () => {
+                  const host = (typeof window !== 'undefined' && window.location.hostname) || 'lvh.me'
+                  const isVercelPreview = host.endsWith('.vercel.app') && host !== 'npccv2.vercel.app'
+
+                  // If we're on a Vercel preview deployment, those hosts don't support wildcard subdomains
+                  // so construction like `slug.${previewHost}` will not resolve. Offer safe fallbacks instead.
+                  if (isVercelPreview) {
+                    const prodHost = 'npccv2.vercel.app'
+                    const prodUrl = `https://${m.account.slug}.${prodHost}`
+                    const devUrl = `https://${m.account.slug}.lvh.me:5173`
+                    const openProd = window.confirm(
+                      'This is a preview deployment and campaign subdomains are not routable from here.\n\nOpen the campaign on the production site now? (OK = production, Cancel = copy local dev URL to clipboard)'
+                    )
+                    if (openProd) {
+                      window.location.href = prodUrl
+                      return
+                    }
+                    try {
+                      await navigator.clipboard.writeText(devUrl)
+                      window.alert('Local dev URL copied to clipboard: ' + devUrl)
+                    } catch (e) {
+                      window.prompt('Copy local dev URL', devUrl)
+                    }
+                    return
+                  }
+
+                  // normal behavior: use lvh.me for local dev, otherwise subdomain on current host
+                  const targetHost = host === 'lvh.me' || host.endsWith('.lvh.me') ? `${m.account.slug}.lvh.me:5173` : `${m.account.slug}.${window.location.host}`
+                  // navigate in the same tab
+                  window.location.href = `https://${targetHost}`
+                }}
+              >Open</button>
             </div>
           </div>
         ))}
