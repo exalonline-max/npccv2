@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import api from '../lib/api'
 import { useAuthStore } from '../state/authStore'
 import ToastContainer from './ToastContainer'
+import { APP_VERSION, BUILD_TIME } from '../version'
 
 function Topbar(){
   const user = useAuthStore(s=>s.user)
@@ -26,6 +27,9 @@ function Topbar(){
           {selected && <span className="badge badge-outline ml-4">{selected.slug}</span>}
           {!user && (
             <span className="ml-4 badge badge-info">Guest</span>
+          )}
+          {showDebug && (
+            <div className="ml-4 text-xs opacity-80">ver: {APP_VERSION} · {BUILD_TIME}</div>
           )}
         </div>
 
