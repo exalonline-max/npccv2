@@ -36,6 +36,6 @@ jobs:
             git checkout main
           fi
           # start or update services
-      docker compose pull || true
-      docker compose up -d --remove-orphans
+          docker compose pull || true
+          docker compose up -d --remove-orphans
           EOF
