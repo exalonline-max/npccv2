@@ -1,89 +1,78 @@
-from flask import Flask, jsonify, request, redirect
-import re
-from .config import Config
-from .extensions import db, migrate, jwt, cors
-from .routes.auth import auth_bp
-from .routes.accounts import campaigns_bp
-from .routes.me import me_bp
-from .routes.tenant import tenant_bp
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+import os
+
+from models import db, User, Campaign
 
 
 def create_app():
-    app = Flask(__name__)
-    app.config.from_object(Config)
+	app = Flask(__name__)
+	app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///dev.db')
+	app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+	app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET', 'dev-secret')
 
-    db.init_app(app)
-    migrate.init_app(app, db)
-    jwt.init_app(app)
-    # JWT error handlers: for optional endpoints like GET /api/me we prefer returning
-    # a neutral anonymous response instead of a 401 when the cookie is expired/invalid.
-    # This avoids noisy 401s in the browser when a stale cookie exists.
-    def _neutral_me_response():
-        return jsonify({'user': None, 'memberships': []}), 200
+	CORS(app)
+	jwt = JWTManager(app)
 
-    @jwt.expired_token_loader
-    def expired_token_callback(jwt_header, jwt_payload):
-        # If the request is for /api/me (optional jwt), return neutral response.
-        if request.path == '/api/me' or request.path.startswith('/api'):
-            return _neutral_me_response()
-        return jsonify({'msg': 'token expired'}), 401
+	db.init_app(app)
 
-    @jwt.invalid_token_loader
-    def invalid_token_callback(err_str):
-        if request.path == '/api/me' or request.path.startswith('/api'):
-            return _neutral_me_response()
-        return jsonify({'msg': 'invalid token'}), 422
+	@app.route('/')
+	def index():
+		return jsonify({'message': 'NPCChatter backend up'})
 
-    @jwt.revoked_token_loader
-    def revoked_token_callback(jwt_header, jwt_payload):
-        if request.path == '/api/me' or request.path.startswith('/api'):
-            return _neutral_me_response()
-        return jsonify({'msg': 'token revoked'}), 401
+	@app.route('/auth/register', methods=['POST'])
+	def register():
+		data = request.get_json() or {}
+		email = data.get('email')
+		password = data.get('password')
+		display = data.get('display_name') or email
+		if not email or not password:
+			return jsonify({'error': 'email and password required'}), 400
+		user = User.create(email, password, display)
+		token = create_access_token(identity=user.id)
+		return jsonify({'token': token, 'user': user.to_dict()}), 201
 
-    # Allow CORS for lvh.me and any subdomain (e.g. admintest1.lvh.me:5173)
-    allowed_origin_re = re.compile(r'^https?://(.+\.)?lvh\.me(:\d+)?$')
+	@app.route('/auth/login', methods=['POST'])
+	def login():
+		data = request.get_json() or {}
+		email = data.get('email')
+		password = data.get('password')
+		user = User.authenticate(email, password)
+		if not user:
+			return jsonify({'error': 'invalid credentials'}), 401
+		token = create_access_token(identity=user.id)
+		return jsonify({'token': token, 'user': user.to_dict()})
 
-    # Also allow localhost dev origin when running in development so Vite (https://localhost:5173)
-    # can call the API without CORS errors. This keeps production restricted to lvh.me.
-    additional_origins = []
-    if app.config.get('ENV') == 'development' or app.config.get('DEBUG'):
-        additional_origins.append('https://localhost:5173')
+	@app.route('/me')
+	@jwt_required()
+	def me():
+		uid = get_jwt_identity()
+		user = User.get(uid)
+		if not user:
+			return jsonify({'error': 'not found'}), 404
+		campaigns = Campaign.for_user(uid)
+		return jsonify({'user': user.to_dict(), 'campaigns': [c.to_dict() for c in campaigns]})
 
-    # Compose origins: a regex for lvh.me plus explicit localhost (in dev).
-    # In development, allow all origins to avoid CORS troubleshooting during iteration.
-    if app.config.get('ENV') == 'development' or app.config.get('DEBUG'):
-        cors.init_app(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
-    else:
-        # Allow production domains: lvh.me and the Vercel deployment host for the frontend.
-        # Add additional production hosts here as needed.
-        origins = [
-            r'^https?://(.+\.)?lvh\.me(:\d+)?$',
-            r'^https?://(.+\.)?npccv2\.vercel\.app(:\d+)?$',
-            # Allow Vercel preview and project subdomains (example: <slug>.alex-larentes-projects.vercel.app)
-            r'^https?://(.+\.)?vercel\.app(:\d+)?$',
-            # Allow your production custom domain and any subdomain (e.g., admintest1.npcchatter.com)
-            r'^https?://(.+\.)?npcchatter\.com(:\d+)?$'
-        ]
-        cors.init_app(app, resources={r"/api/*": {"origins": origins}}, supports_credentials=True)
+	@app.route('/campaigns', methods=['POST'])
+	@jwt_required()
+	def create_campaign():
+		data = request.get_json() or {}
+		name = data.get('name') or 'New Campaign'
+		uid = get_jwt_identity()
+		campaign = Campaign.create(name, uid)
+		return jsonify({'campaign': campaign.to_dict()}), 201
 
-    app.register_blueprint(auth_bp, url_prefix="/api/auth")
-    app.register_blueprint(campaigns_bp, url_prefix="/api/campaigns")
-    app.register_blueprint(me_bp, url_prefix="/api")
-    app.register_blueprint(tenant_bp, url_prefix="/api/tenant")
+	@app.route('/campaigns')
+	@jwt_required()
+	def list_campaigns():
+		uid = get_jwt_identity()
+		campaigns = Campaign.for_user(uid)
+		return jsonify({'campaigns': [c.to_dict() for c in campaigns]})
 
-    @app.get('/api/health')
-    def health():
-        return jsonify({"status": "ok"})
+	return app
 
-    @app.get('/')
-    def index():
-        # Redirect base URL to the API health endpoint so the root doesn't return a 404
-        return redirect('/api/health')
-
-    return app
-
-
-app = create_app()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+	app = create_app()
+	app.run(debug=True)
