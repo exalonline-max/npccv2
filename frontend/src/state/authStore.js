@@ -7,7 +7,8 @@ export const useAuthStore = create((set, get) => ({
   selectedAccount: null,
   login: async (email, password) => {
     try{
-      const res = await api.post('/auth/login', { email, password })
+  console.debug('[auth] login: attempting proxied /api/auth/login')
+  const res = await api.post('/auth/login', { email, password })
       // After a successful login we must fetch the authenticated user even when
       // on the public marketing host (www.npcchatter.com). fetchMe normally
       // skips calling the protected /me endpoint to avoid noisy 401s for
@@ -18,6 +19,7 @@ export const useAuthStore = create((set, get) => ({
     }catch(e){
       // If the Vercel proxy returns 404 (NOT_FOUND), fallback to calling the backend directly.
       if(e && e.response && e.response.status === 404){
+        console.debug('[auth] login: proxied login returned 404, falling back to direct backend')
         const res = await directApi.post('/auth/login', { email, password })
         // direct backend login may be used when the proxy is missing; force
         // fetching the authenticated user so the client sees the new session
@@ -41,6 +43,7 @@ export const useAuthStore = create((set, get) => ({
       if(!force && typeof window !== 'undefined'){
         const host = window.location.hostname || ''
         if(host === 'www.npcchatter.com' || host === 'npcchatter.com'){
+          console.debug('[auth] fetchMe: on public host, skipping /me')
           set({ user: null, memberships: [] })
           return null
         }
@@ -48,6 +51,7 @@ export const useAuthStore = create((set, get) => ({
 
       let res
       try{
+        console.debug('[auth] fetchMe: attempting proxied /api/me')
         res = await api.get('/me')
       }catch(err){
         // If the Vercel proxy is missing or returns 404, fallback to the direct
@@ -56,6 +60,7 @@ export const useAuthStore = create((set, get) => ({
         // unavailable through the proxy and the UI immediately treats the user
         // as unauthenticated.
         if(err && err.response && err.response.status === 404){
+          console.debug('[auth] fetchMe: proxied /me returned 404, falling back to direct backend')
           res = await directApi.get('/me')
         }else{
           throw err
