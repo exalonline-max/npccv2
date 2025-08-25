@@ -7,7 +7,7 @@ export default function LandingPage(){
 
   return (
     <div className="min-h-screen bg-base-100">
-      <header className="bg-gradient-to-r from-primary/90 to-secondary/80 text-white py-20">
+      <header className="bg-gradient-to-r from-primary/90 to-secondary/80 text-white py-24 md:py-28 relative z-10 overflow-visible">
         <div className="max-w-5xl mx-auto px-6 text-center">
           <div className="max-w-3xl mx-auto">
             <div className="inline-block mb-6">
@@ -42,26 +42,11 @@ export default function LandingPage(){
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 -mt-12">
+  <main className="max-w-5xl mx-auto px-6 -mt-8 md:-mt-12 pt-6 relative z-20">
         <section className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           <article className="card p-6 shadow-md">
             <h3 className="font-semibold text-xl">Real-time group chat</h3>
             <p className="mt-2 text-sm text-muted-foreground">Keep the story moving with low-latency text chat, threaded NPC dialogue, and easy role assignments.</p>
-          </article>
-
-          <article className="card p-6 shadow-md">
-            <h3 className="font-semibold text-xl">DM tools & notes</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Organize session notes, private NPC prompts, and scene bookmarks so every session flows smoothly.</p>
-          </article>
-
-          <article className="card p-6 shadow-md">
-            <h3 className="font-semibold text-xl">Invite players instantly</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Share a campaign link and players join in seconds — no complicated setup required.</p>
-          </article>
-
-          <article className="card p-6 shadow-md">
-            <h3 className="font-semibold text-xl">Safe & private</h3>
-            <p className="mt-2 text-sm text-muted-foreground">Campaigns are isolated by subdomain and protected by cookie-based sessions so your world stays yours.</p>
           </article>
 
           <article className="card p-6 shadow-md">
