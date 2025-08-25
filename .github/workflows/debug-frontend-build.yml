@@ -1,0 +1,40 @@
+name: Debug Frontend Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build and capture logs
+        working-directory: frontend
+        run: |
+          mkdir -p .github/build-logs
+          npm run build 2>&1 | tee ../.github/build-logs/frontend-build.log
+
+      - name: Upload build log
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-log
+          path: frontend/../.github/build-logs/frontend-build.log
+
+      - name: Upload dist
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
