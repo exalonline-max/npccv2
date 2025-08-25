@@ -5,17 +5,34 @@ tenant_bp = Blueprint('tenant', __name__)
 
 
 def extract_subdomain(hostname: str):
-    # handle lvh.me and npcchatter.com
+    # Try to extract the left-most label if the hostname ends with a known public domain.
+    # The public domain may be configured via an environment variable for flexibility.
+    public_domain = None
+    try:
+        public_domain = current_app.config.get('PUBLIC_DOMAIN', 'npcchatter.com')
+    except Exception:
+        public_domain = 'npcchatter.com'
+
+    # normalize
+    hostname = (hostname or '').lower()
+    pd = public_domain.lower()
+
+    # support lvh.me in development
     if hostname.endswith('.lvh.me'):
         parts = hostname.split('.')
         if len(parts) >= 3:
             return parts[0]
         return None
-    if hostname.endswith('.npcchatter.com'):
+
+    # support configured public domain (e.g., npcchatter.com)
+    if hostname == pd:
+        return None
+    if hostname.endswith('.' + pd):
         parts = hostname.split('.')
         if len(parts) >= 3:
             return parts[0]
         return None
+
     return None
 
 

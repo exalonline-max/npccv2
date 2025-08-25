@@ -33,7 +33,11 @@ def create_app():
         # Add additional production hosts here as needed.
         origins = [
             r'^https?://(.+\.)?lvh\.me(:\d+)?$',
-            r'^https?://(.+\.)?npccv2\.vercel\.app(:\d+)?$'
+            r'^https?://(.+\.)?npccv2\.vercel\.app(:\d+)?$',
+            # Allow Vercel preview and project subdomains (example: <slug>.alex-larentes-projects.vercel.app)
+            r'^https?://(.+\.)?vercel\.app(:\d+)?$',
+            # Allow your production custom domain and any subdomain (e.g., admintest1.npcchatter.com)
+            r'^https?://(.+\.)?npcchatter\.com(:\d+)?$'
         ]
         cors.init_app(app, resources={r"/api/*": {"origins": origins}}, supports_credentials=True)
 
