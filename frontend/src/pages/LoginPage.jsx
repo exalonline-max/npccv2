@@ -11,8 +11,26 @@ export default function LoginPage(){
 
   const submit = async (e)=>{
     e.preventDefault()
-  await login(email, password)
-  navigate('/campaigns')
+  try{
+    await login(email, password)
+    // wait for the auth store to populate (fetchMe may fallback to directApi)
+    const start = Date.now()
+    while(!useAuthStore.getState().user && Date.now() - start < 2000){
+      // small backoff while the client populates the user
+      // eslint-disable-next-line no-await-in-loop
+      await new Promise(r => setTimeout(r, 100))
+    }
+    if(useAuthStore.getState().user){
+      navigate('/campaigns')
+    }else{
+      // fallback: still navigate so the user can retry, but avoid immediate
+      // force-redirect behavior from AccountPickerPage by using a soft push
+      navigate('/campaigns')
+    }
+  }catch(err){
+    // allow error to surface (form can show validation later)
+    throw err
+  }
   }
 
   return (
