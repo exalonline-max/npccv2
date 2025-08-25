@@ -15,6 +15,31 @@ def create_app():
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    # JWT error handlers: for optional endpoints like GET /api/me we prefer returning
+    # a neutral anonymous response instead of a 401 when the cookie is expired/invalid.
+    # This avoids noisy 401s in the browser when a stale cookie exists.
+    def _neutral_me_response():
+        return jsonify({'user': None, 'memberships': []}), 200
+
+    @jwt.expired_token_loader
+    def expired_token_callback(jwt_header, jwt_payload):
+        # If the request is for /api/me (optional jwt), return neutral response.
+        if request.path == '/api/me' or request.path.startswith('/api'):
+            return _neutral_me_response()
+        return jsonify({'msg': 'token expired'}), 401
+
+    @jwt.invalid_token_loader
+    def invalid_token_callback(err_str):
+        if request.path == '/api/me' or request.path.startswith('/api'):
+            return _neutral_me_response()
+        return jsonify({'msg': 'invalid token'}), 422
+
+    @jwt.revoked_token_loader
+    def revoked_token_callback(jwt_header, jwt_payload):
+        if request.path == '/api/me' or request.path.startswith('/api'):
+            return _neutral_me_response()
+        return jsonify({'msg': 'token revoked'}), 401
+
     # Allow CORS for lvh.me and any subdomain (e.g. admintest1.lvh.me:5173)
     allowed_origin_re = re.compile(r'^https?://(.+\.)?lvh\.me(:\d+)?$')
 

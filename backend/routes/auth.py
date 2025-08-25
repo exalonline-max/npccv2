@@ -12,15 +12,26 @@ auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
-    data = request.get_json() or {}
-    email = data.get('email')
-    password = data.get('password')
-    display_name = data.get('display_name')
+    """Register a new user.
+
+    Expects a JSON body with keys: email, password, and optional display_name.
+    We parse the request body into explicitly typed local variables to help
+    static analysis (Pylance) understand the shapes.
+    """
+    from typing import Any, Dict, Optional
+
+    data: Dict[str, Any] = request.get_json() or {}
+    email: Optional[str] = data.get('email')
+    password: Optional[str] = data.get('password')
+    display_name: Optional[str] = data.get('display_name')
     if not email or not password:
         return jsonify({'error': 'email and password required'}), 400
     if User.query.filter_by(email=email).first():
         return jsonify({'error': 'email exists'}), 400
-    user = User(email=email.lower(), display_name=display_name)
+    # Construct the model and set attributes to avoid static-analysis warnings
+    user = User()
+    user.email = email.lower()
+    user.display_name = display_name
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
