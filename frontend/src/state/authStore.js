@@ -19,7 +19,10 @@ export const useAuthStore = create((set, get) => ({
       // If the Vercel proxy returns 404 (NOT_FOUND), fallback to calling the backend directly.
       if(e && e.response && e.response.status === 404){
         const res = await directApi.post('/auth/login', { email, password })
-        await get().fetchMe()
+        // direct backend login may be used when the proxy is missing; force
+        // fetching the authenticated user so the client sees the new session
+        // immediately even on the public marketing host.
+        await get().fetchMe(true)
         return res
       }
       throw e
