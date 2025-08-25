@@ -8,7 +8,12 @@ export const useAuthStore = create((set, get) => ({
   login: async (email, password) => {
     try{
       const res = await api.post('/auth/login', { email, password })
-      await get().fetchMe()
+      // After a successful login we must fetch the authenticated user even when
+      // on the public marketing host (www.npcchatter.com). fetchMe normally
+      // skips calling the protected /me endpoint to avoid noisy 401s for
+      // unauthenticated visitors; force=true bypasses that guard for the login
+      // flow so the store is populated immediately.
+      await get().fetchMe(true)
       return res
     }catch(e){
       // If the Vercel proxy returns 404 (NOT_FOUND), fallback to calling the backend directly.
@@ -24,11 +29,13 @@ export const useAuthStore = create((set, get) => ({
     await api.post('/auth/logout')
     set({ user: null, memberships: [], selectedAccount: null })
   },
-  fetchMe: async () => {
+  fetchMe: async (force = false) => {
     try{
-      // Don't call the protected /me endpoint from the public marketing site
-      // to avoid noisy 401s in the browser console for unauthenticated visitors.
-      if(typeof window !== 'undefined'){
+      // By default, avoid calling the protected /me endpoint from the public
+      // marketing site (www.npcchatter.com) to prevent noisy 401s for
+      // unauthenticated visitors. If `force` is true, bypass that guard so
+      // callers (like login) can populate the store immediately after auth.
+      if(!force && typeof window !== 'undefined'){
         const host = window.location.hostname || ''
         if(host === 'www.npcchatter.com' || host === 'npcchatter.com'){
           set({ user: null, memberships: [] })
