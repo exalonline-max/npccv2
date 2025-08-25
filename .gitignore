@@ -1,0 +1,27 @@
+# Node and JS
+node_modules/
+frontend/dist/
+
+# Python
+.venv/
+backend/.venv/
+__pycache__/
+backend/__pycache__/
+*.pyc
+*.egg-info/
+.mypy_cache/
+
+# Editor/IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Env and secrets
+.env
+.env.*
+*.sqlite3
+*.log
+
+# Coverage and build
+coverage/
+migrations/
