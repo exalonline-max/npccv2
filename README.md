@@ -46,3 +46,19 @@ Database and production notes:
 Auth:
 
 - For this simple app the scaffold uses JWTs stored in localStorage. For higher security switch to http-only cookies and CSRF protections.
+
+Alembic / Migrations
+
+Run migrations locally (after setting DATABASE_URL):
+
+```bash
+source .venv/bin/activate
+pip install -r backend/requirements.txt
+cd backend
+alembic upgrade head
+```
+
+Deploy notes
+
+- Vercel: set `VITE_API_URL` to your deployed backend URL (e.g. https://api.npcchatter.com) in Vercel environment variables.
+- Fly: set `DATABASE_URL` and `JWT_SECRET` secrets for the Fly app. Use `flyctl` to deploy the `backend/` Dockerfile.
