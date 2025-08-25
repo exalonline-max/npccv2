@@ -17,7 +17,8 @@ jobs:
       - name: Install flyctl
         run: |
           curl -L https://fly.io/install.sh | sh
-          echo "::add-path::$HOME/.fly/bin"
+          # Use the recommended way to add to PATH in GitHub Actions
+          echo "$HOME/.fly/bin" >> $GITHUB_PATH
 
       - name: Login to Fly
         env:
