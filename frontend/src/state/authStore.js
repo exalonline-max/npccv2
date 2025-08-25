@@ -43,7 +43,22 @@ export const useAuthStore = create((set, get) => ({
         }
       }
 
-      const res = await api.get('/me')
+      let res
+      try{
+        res = await api.get('/me')
+      }catch(err){
+        // If the Vercel proxy is missing or returns 404, fallback to the direct
+        // backend so the client can populate the authenticated user after
+        // login. This avoids a situation where login succeeds but /me is
+        // unavailable through the proxy and the UI immediately treats the user
+        // as unauthenticated.
+        if(err && err.response && err.response.status === 404){
+          res = await directApi.get('/me')
+        }else{
+          throw err
+        }
+      }
+
       set({ user: res.data.user, memberships: res.data.memberships })
       return res.data
     }catch(e){
