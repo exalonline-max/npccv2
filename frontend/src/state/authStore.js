@@ -1,14 +1,24 @@
 import create from 'zustand'
-import api from '../lib/api'
+import api, { directApi } from '../lib/api'
 
 export const useAuthStore = create((set, get) => ({
   user: null,
   memberships: [],
   selectedAccount: null,
   login: async (email, password) => {
-    const res = await api.post('/auth/login', { email, password })
-    await get().fetchMe()
-    return res
+    try{
+      const res = await api.post('/auth/login', { email, password })
+      await get().fetchMe()
+      return res
+    }catch(e){
+      // If the Vercel proxy returns 404 (NOT_FOUND), fallback to calling the backend directly.
+      if(e && e.response && e.response.status === 404){
+        const res = await directApi.post('/auth/login', { email, password })
+        await get().fetchMe()
+        return res
+      }
+      throw e
+    }
   },
   logout: async () => {
     await api.post('/auth/logout')

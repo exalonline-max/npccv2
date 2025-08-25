@@ -29,4 +29,15 @@ const instance = axios.create({
   withCredentials: true,
 })
 
+// Also expose a direct backend client that targets the Fly backend URL.
+// Use VITE_API_URL when set (useful for pointing to the backend directly in Vercel or other hosts).
+const directBase = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL)
+  ? import.meta.env.VITE_API_URL.replace(/\/+$/,'').replace(/\/$/, '')
+  : 'https://npccv2-backend.fly.dev'
+
+export const directApi = axios.create({
+  baseURL: directBase.replace(/\/+$/,'') + '/api',
+  withCredentials: true,
+})
+
 export default instance
